@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition Home</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+       
+        body {
+            background-image: url('https://media.istockphoto.com/id/1139441864/photo/automatic-car-speeding-in-china-big-data.jpg?s=1024x1024&w=is&k=20&c=MlsZtBB9TQfQerZIjE_P15QXLW1fJ4t_SYmI37DHCao='); /* Replace with actual URL */
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+        }
+        .result {
+            margin-top: 20px;
+            color: white;
+        }
+
+        video {
+            max-width: 100%;
+            border-radius: 10px;
+        }
+
+        h2, h4 {
+            color: white;
+        }
+
+        .btn-custom {
+            background-color: #1e90ff;
+            border: none;
+            color: white;
+            font-size: 18px;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn-custom:hover {
+            background-color: #4682b4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div>
+            <h2>Face Recognition Web App</h2>
+            <p>Upload an image or use your webcam to detect faces</p>
+
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <h4>Upload Image</h4>
+                    <input type="file" id="imageInput" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <h4>Use Webcam</h4>
+                    <video id="webcam" autoplay></video>
+                    <button id="captureBtn" class="btn-custom mt-3">Capture</button>
+                </div>
+            </div>
+
+            <div class="result mt-4">
+                <h4>Recognition Result</h4>
+                <div id="resultMessage"></div>
+                <img id="resultImage" src="" alt="Captured Face" style="max-width: 100%; display: none;" />
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const captureBtn = document.getElementById('captureBtn');
+        const resultMessage = document.getElementById('resultMessage');
+        const resultImage = document.getElementById('resultImage');
+        const webcam = document.getElementById('webcam');
+
+        imageInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        recognizeFace(img);
+                    };
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+       
+        async function setupWebcam() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            webcam.srcObject = stream;
+        }
+
+        captureBtn.addEventListener('click', function() {
+            const canvas = document.createElement('canvas');
+            canvas.width = webcam.videoWidth;
+            canvas.height = webcam.videoHeight;
+            canvas.getContext('2d').drawImage(webcam, 0, 0);
+            const image = canvas.toDataURL();
+            recognizeFace(image);
+        });
+
+       
+        async function recognizeFace(image) {
+            resultMessage.textContent = 'Processing...';
+            const model = await faceLandmarksDetection.load(
+                faceLandmarksDetection.SupportedPackages.mediapipeFacemesh
+            );
+            const input = typeof image === 'string' ? new Image() : image;
+            if (typeof image === 'string') input.src = image;
+
+            input.onload = async function() {
+                const predictions = await model.estimateFaces({
+                    input: input
+                });
+                
+                if (predictions.length > 0) {
+                    resultMessage.textContent = 'Face Recognized!';
+                    resultImage.src = input.src;
+                    resultImage.style.display = 'block';
+                } else {
+                    resultMessage.textContent = 'No face detected!';
+                    resultImage.style.display = 'none';
+                }
+            };
+        }
+
+        
+        setupWebcam();
+    </script>
+
+</body>
+</html>
