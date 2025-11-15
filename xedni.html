@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mark Your Attendance</title>
   <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-
   <style>
     body {
       background-image: url('https://media.istockphoto.com/id/1139441864/photo/automatic-car-speeding-in-china-big-data.jpg?s=1024x1024&w=is&k=20&c=MlsZtBB9TQfQerZIjE_P15QXLW1fJ4t_SYmI37DHCao=');
@@ -19,156 +18,179 @@
     .container {
       display: flex;
       justify-content: center;
-      align-items: center;
-      height: 100vh;
+      align-items: flex-start;
+      min-height: 100vh;
       text-align: center;
-      background-color: rgba(0, 0, 0, 0.6);
+      background-color: rgba(0, 0, 0, 0.55);
       border-radius: 10px;
-      padding: 20px;
+      padding: 30px;
+    }
+
+    .panel {
+      background: rgba(255,255,255,0.06);
+      padding: 18px;
+      border-radius: 10px;
+      margin: 8px;
+      min-width: 320px;
+      color: white;
     }
 
     video {
-      max-width: 100%;
-      border-radius: 10px;
+      width: 320px;
+      height: auto;
+      border-radius: 8px;
+      background: #000;
     }
-
-    h2, h4 { color: white; }
 
     .btn-custom {
       background-color: #28a745;
       border: none;
       color: white;
-      font-size: 18px;
-      padding: 12px 24px;
-      border-radius: 5px;
+      font-size: 16px;
+      padding: 10px 18px;
+      border-radius: 6px;
       cursor: pointer;
     }
 
     .btn-custom:hover { background-color: #218838; }
 
-    .result {
-      margin-top: 20px;
-      color: white;
+    #attendanceTable {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
     }
 
-    #attendance-log {
-      margin-top: 20px;
-      background-color: rgba(255, 255, 255, 0.15);
-      padding: 10px;
-      border-radius: 5px;
-      max-height: 200px;
-      overflow-y: auto;
+    #attendanceTable th, #attendanceTable td {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      text-align: left;
+      font-size: 14px;
+    }
+
+    #attendanceTable thead th {
+      font-weight: 600;
+      color: #fff;
+      opacity: 0.95;
+    }
+
+    .status-present { color: #8ff0a1; font-weight:600; }
+    .status-failed { color: #ff9a9a; font-weight:600; }
+
+    @media (max-width: 900px) {
+      .container { flex-direction: column; align-items: center; padding:20px; }
     }
   </style>
 </head>
-
 <body>
   <div class="container">
-    <div>
-      <h2>Face Recognition Attendance</h2>
-      <p>Use your webcam or upload an image to mark attendance</p>
-
-      <div class="row mt-4">
-        <div class="col-md-6">
-          <h4>Upload Image</h4>
-          <input type="file" id="imageInput" class="form-control" />
-        </div>
-
-        <div class="col-md-6">
-          <h4>Use Webcam</h4>
-          <video id="webcam" autoplay></video>
-          <button id="captureBtn" class="btn-custom mt-3">Mark Attendance</button>
-        </div>
+    <div class="panel" style="flex:0 0 360px;">
+      <h3 style="margin-top:0;">Face Recognition</h3>
+      <p style="margin-bottom:6px;">Allow webcam and click Mark Attendance to verify.</p>
+      <video id="webcam" autoplay muted playsinline></video>
+      <div style="margin-top:10px;">
+        <button id="captureBtn" class="btn-custom">Mark Attendance</button>
       </div>
 
-      <div class="result mt-4">
-        <h4>Attendance Status</h4>
-        <div id="resultMessage"></div>
-        <img id="resultImage" src="" alt="Captured Face" style="max-width: 100%; display: none;" />
+      <div style="margin-top:12px;">
+        <h5 style="margin-bottom:6px;">Captured</h5>
+        <img id="resultImage" src="" alt="Captured" style="width:100%;border-radius:8px; display:none;">
+        <div id="resultMessage" style="margin-top:8px;"></div>
       </div>
+    </div>
 
-      <div id="attendance-log">
-        <h5>Today's Attendance Log</h5>
-        <ul id="logList" style="list-style:none; padding-left:0;"></ul>
+    <div class="panel" id="attendancePanel" style="flex:1 1 420px;">
+      <h3 style="margin-top:0;">Attendance History</h3>
+      <table id="attendanceTable" aria-live="polite">
+        <thead>
+          <tr><th>Name</th><th>Status</th><th>Time</th></tr>
+        </thead>
+        <tbody id="attendanceBody">
+          <!-- history rows injected here -->
+        </tbody>
+      </table>
+
+      <div style="margin-top:10px; font-size:13px; opacity:0.9;">
+        Registered references: <span id="registeredNames">None</span>
       </div>
     </div>
   </div>
 
-  <!-- JS Section -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
+  <!-- backend -->
+  <script src="backend.js"></script>
 
   <script>
-    const imageInput = document.getElementById('imageInput');
+    // ---------- verify page wiring ----------
+    const webcam = document.getElementById('webcam');
     const captureBtn = document.getElementById('captureBtn');
     const resultMessage = document.getElementById('resultMessage');
     const resultImage = document.getElementById('resultImage');
-    const webcam = document.getElementById('webcam');
-    const logList = document.getElementById('logList');
+    const attendanceBody = document.getElementById('attendanceBody');
+    const registeredNames = document.getElementById('registeredNames');
 
-    async function setupWebcam() {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      webcam.srcObject = stream;
+    async function setupCam() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+        webcam.srcObject = stream;
+      } catch (e) {
+        console.warn('Cam error', e);
+        resultMessage.textContent = 'Webcam unavailable. Use Register on the main page.';
+      }
+    }
+    setupCam();
+
+    // render attendance history table from backend (history array)
+    function renderHistory() {
+      const history = window.SmartAttendanceBackend.loadAttendanceHistory(); // returns array
+      const refs = window.SmartAttendanceBackend.loadRefs();
+      registeredNames.textContent = refs && refs.length ? refs.map(r=>r.name).join(', ') : 'None';
+      attendanceBody.innerHTML = '';
+      // We keep oldest first (top) and newest appended below, as requested.
+      history.forEach(entry => {
+        const tr = document.createElement('tr');
+        const tdName = document.createElement('td'); tdName.textContent = entry.name;
+        const tdStatus = document.createElement('td'); tdStatus.innerHTML = `<span class="status-present">Present</span>`;
+        const tdTime = document.createElement('td'); tdTime.textContent = new Date(entry.time).toLocaleTimeString();
+        tr.appendChild(tdName); tr.appendChild(tdStatus); tr.appendChild(tdTime);
+        attendanceBody.appendChild(tr);
+      });
     }
 
-    imageInput.addEventListener('change', function(event) {
-      const file = event.target.files[0];
-      if (file) {
-        let reader = new FileReader();
-        reader.onload = function(e) {
-          const img = new Image();
-          img.src = e.target.result;
-          img.onload = function() {
-            markAttendance(img);
-          };
-        };
-        reader.readAsDataURL(file);
+    // capture & verify
+    captureBtn.addEventListener('click', async () => {
+      if (!webcam || !webcam.videoWidth) {
+        alert('Camera not ready.');
+        return;
       }
-    });
-
-    captureBtn.addEventListener('click', function() {
       const canvas = document.createElement('canvas');
       canvas.width = webcam.videoWidth;
       canvas.height = webcam.videoHeight;
       canvas.getContext('2d').drawImage(webcam, 0, 0);
-      const image = canvas.toDataURL();
-      markAttendance(image);
+      const dataURL = canvas.toDataURL('image/png');
+
+      resultImage.src = dataURL;
+      resultImage.style.display = 'block';
+      resultMessage.textContent = 'Verifying...';
+
+      const res = await window.SmartAttendanceBackend.verifyDataURL(dataURL);
+      if (res.ok) {
+        const time = new Date().toLocaleTimeString();
+        resultMessage.innerHTML = `<span style="color:#8ff0a1;font-weight:600">Verified — ${res.name} at ${time}</span>`;
+      } else {
+        if (res.reason === 'no-refs') {
+          resultMessage.innerHTML = `<span style="color:#ffd1a1">No registered references — register on main page first.</span>`;
+        } else {
+          resultMessage.innerHTML = `<span style="color:#ff9a9a">Not verified</span>`;
+        }
+      }
+      renderHistory();
     });
 
-    async function markAttendance(image) {
-      resultMessage.textContent = 'Verifying face...';
-
-      const model = await faceLandmarksDetection.load(
-        faceLandmarksDetection.SupportedPackages.mediapipeFacemesh
-      );
-
-      const input = typeof image === 'string' ? new Image() : image;
-      if (typeof image === 'string') input.src = image;
-
-      input.onload = async function() {
-        const predictions = await model.estimateFaces({ input: input });
-
-        if (predictions.length > 0) {
-          const now = new Date();
-          const time = now.toLocaleTimeString();
-          const name = "User"; // Placeholder – replace with your DB name match logic
-          resultMessage.textContent = `Attendance Marked for ${name} at ${time}`;
-          resultImage.src = input.src;
-          resultImage.style.display = 'block';
-
-          // Log attendance in list
-          const li = document.createElement('li');
-          li.textContent = `${name} - ${time}`;
-          logList.appendChild(li);
-        } else {
-          resultMessage.textContent = 'No face detected! Try again.';
-          resultImage.style.display = 'none';
-        }
-      };
-    }
-
-    setupWebcam();
+    // initial render after backend ready
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(renderHistory, 200);
+      // also allow backend to request re-render by calling window._refreshHistory
+      window._refreshHistory = renderHistory;
+    });
   </script>
 </body>
 </html>

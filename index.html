@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Face Recognition Attendance System</title>
   <link rel="stylesheet" href="index.css">
 </head>
@@ -22,13 +22,180 @@
       <img src="https://media.istockphoto.com/id/1384053505/vector/face-recognition-great-design-for-any-purposes-protection-icon-vector-personal-protection.jpg?s=612x612&w=0&k=20&c=wDI6VyC9uS98UZXURoUQOJZCCY3_sPuf2bF8XS29eOs=" alt="Attendance System Logo">
     </div>
 
-    <h2>Mark Attendance Using Your Face</h2>
-    <p>Our system automatically records your attendance securely and efficiently using face recognition technology.</p>
-    <button class="btn-start"><a href="xedni.html">Start Attendance</a></button>
+    <h2>Register & then Start Attendance</h2>
+    <p>Register reference photos here. After registering, click Start Attendance to verify using webcam.</p>
+
+    <!-- Register via file -->
+    <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
+      <button id="registerBtnFile" class="btn-start-like">Register (Upload)</button>
+      <button id="registerBtnCam" class="btn-start-like" style="background:#007bff">Register via Webcam</button>
+      <a class="btn-start" href="xedni.html" style="display:inline-block; color:white; text-decoration:none; text-align:center;">Start Attendance</a>
+    </div>
+
+    <!-- area for webcam register UI (hidden by default) -->
+    <div id="camRegisterArea" style="margin-top:12px; display:none; width:100%; max-width:480px;">
+      <div style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+        <video id="regWebcam" autoplay muted playsinline style="width:240px;border-radius:8px;background:#000;"></video>
+        <div style="flex:1;">
+          <p style="margin:0 0 8px 0; color:#333;">Position face and click Capture to register via camera.</p>
+          <div style="display:flex; gap:8px;">
+            <button id="regCaptureBtn" class="btn-start-like" style="background:#2ecc71">Capture & Register</button>
+            <button id="regCancelBtn" class="btn-start-like" style="background:#ccc; color:#111">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Registered people panel -->
+    <div id="registeredPanel" style="margin-top:18px; width:100%; max-width:640px; text-align:left;">
+      <h4 style="margin:0 0 8px 0;">Registered People</h4>
+      <div id="registeredList" style="background:#f7f7f7; padding:12px; border-radius:8px; color:#111;">
+        <!-- list injected here -->
+        Loading...
+      </div>
+      <div style="margin-top:8px; font-size:13px; color:#555;">
+        Tip: Remove test entries with Delete. Registered faces are stored locally (browser).
+      </div>
+    </div>
+
+    <p style="margin-top:12px; font-size:13px; color:#333; max-width:520px;">
+      Tip: For a convincing demo register a clear frontal photo (selfie) — then use the same camera framing to verify.
+    </p>
   </div>
 
   <footer>
     <p>&copy; 2025 Face Attendance System | <a href="#privacy">Privacy Policy</a></p>
   </footer>
+
+  <!-- backend -->
+  <script src="backend.js"></script>
+
+  <script>
+    // ---- Index page wiring: file-register, webcam-register, registered list + delete ----
+    document.addEventListener('DOMContentLoaded', () => {
+      // file upload register
+      const registerBtnFile = document.getElementById('registerBtnFile');
+      const hiddenRegisterInput = document.getElementById('fa_register_input'); // backend creates this
+      registerBtnFile.addEventListener('click', () => {
+        if (hiddenRegisterInput) hiddenRegisterInput.click();
+        else alert('Registration input not ready. Reload page.');
+      });
+
+      // webcam register toggle
+      const registerBtnCam = document.getElementById('registerBtnCam');
+      const camArea = document.getElementById('camRegisterArea');
+      const regWebcam = document.getElementById('regWebcam');
+      const regCaptureBtn = document.getElementById('regCaptureBtn');
+      const regCancelBtn = document.getElementById('regCancelBtn');
+      let camStream = null;
+
+      registerBtnCam.addEventListener('click', async () => {
+        camArea.style.display = 'block';
+        try {
+          camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+          regWebcam.srcObject = camStream;
+        } catch (e) {
+          console.warn('Camera error', e);
+          alert('Cannot access webcam. Allow camera or use Upload option.');
+          camArea.style.display = 'none';
+        }
+      });
+
+      regCancelBtn.addEventListener('click', () => {
+        camArea.style.display = 'none';
+        if (camStream) {
+          camStream.getTracks().forEach(t => t.stop());
+          camStream = null;
+        }
+      });
+
+      regCaptureBtn.addEventListener('click', async () => {
+        if (!regWebcam || !regWebcam.videoWidth) {
+          alert('Camera not ready.');
+          return;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = regWebcam.videoWidth;
+        canvas.height = regWebcam.videoHeight;
+        canvas.getContext('2d').drawImage(regWebcam, 0, 0);
+        const dataURL = canvas.toDataURL('image/png');
+        // use backend API to register from dataURL
+        const res = await window.SmartAttendanceBackend.registerFromDataURL(dataURL);
+        if (res && res.ok) {
+          alert(`Registered ${res.name}`);
+          // refresh the visible registered list
+          window.SmartAttendanceBackend.rebuildRefsUI();
+        } else {
+          alert('Register failed or cancelled.');
+        }
+        // stop & hide
+        if (camStream) { camStream.getTracks().forEach(t=>t.stop()); camStream = null; }
+        camArea.style.display = 'none';
+      });
+
+      // Populate registered list and wire delete buttons
+      function refreshRegisteredList() {
+        const listElem = document.getElementById('registeredList');
+        const refs = window.SmartAttendanceBackend.loadRefs();
+        if (!refs || refs.length === 0) {
+          listElem.innerHTML = '<div style="opacity:0.9">No references registered.</div>';
+          return;
+        }
+        listElem.innerHTML = '';
+        refs.forEach((r, idx) => {
+          const row = document.createElement('div');
+          row.style.display = 'flex';
+          row.style.justifyContent = 'space-between';
+          row.style.alignItems = 'center';
+          row.style.padding = '6px 0';
+          row.style.borderBottom = (idx < refs.length-1) ? '1px solid #e6e6e6' : 'none';
+          const left = document.createElement('div');
+          left.style.display = 'flex';
+          left.style.gap = '10px';
+          left.style.alignItems = 'center';
+          const thumb = document.createElement('img');
+          thumb.src = r.dataURL;
+          thumb.style.width = '44px';
+          thumb.style.height = '44px';
+          thumb.style.objectFit = 'cover';
+          thumb.style.borderRadius = '6px';
+          const name = document.createElement('div');
+          name.textContent = r.name;
+          name.style.fontWeight = '600';
+          left.appendChild(thumb);
+          left.appendChild(name);
+
+          const right = document.createElement('div');
+          right.style.display = 'flex';
+          right.style.gap = '8px';
+          const del = document.createElement('button');
+          del.textContent = 'Delete';
+          del.style.background = '#ff6b6b';
+          del.style.border = 'none';
+          del.style.color = '#fff';
+          del.style.padding = '6px 10px';
+          del.style.borderRadius = '6px';
+          del.style.cursor = 'pointer';
+          del.addEventListener('click', async () => {
+            if (!confirm(`Delete registered face for ${r.name}?`)) return;
+            await window.SmartAttendanceBackend.deleteRefByName(r.name);
+            refreshRegisteredList();
+            alert(`${r.name} removed.`);
+          });
+          right.appendChild(del);
+
+          row.appendChild(left);
+          row.appendChild(right);
+          listElem.appendChild(row);
+        });
+      }
+
+      // initial load + provide hook for backend to call
+      refreshRegisteredList();
+      // expose a small callback in case backend updates
+      window._refreshRegisteredList = refreshRegisteredList;
+      // backend.rebuildRefsUI will call this helper if present
+    });
+  </script>
 </body>
 </html>
