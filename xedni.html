@@ -4,7 +4,43 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mark Your Attendance</title>
+
   <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="index.css">
+
+  <!-- NAVBAR FIX — transparent navbar + individual highlight -->
+  <style>
+    .navbar {
+      background-color: transparent !important;
+      box-shadow: none !important;
+      backdrop-filter: blur(2px);
+      padding-top: 18px;
+      padding-bottom: 0;
+    }
+
+    .navbar a {
+      color: #ffffff;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+      background: transparent;
+    }
+
+    .navbar a:hover {
+      background-color: rgba(0,61,128,0.9);
+      border-radius: 6px;
+      padding: 10px 14px;
+      text-decoration: none;
+    }
+
+    .nav-active {
+      background-color: rgba(0,43,85,0.95) !important;
+      border-radius: 6px;
+      padding: 10px 14px;
+    }
+  </style>
+
+  <!-- PAGE-SPECIFIC STYLE -->
   <style>
     body {
       background-image: url('https://media.istockphoto.com/id/1139441864/photo/automatic-car-speeding-in-china-big-data.jpg?s=1024x1024&w=is&k=20&c=MlsZtBB9TQfQerZIjE_P15QXLW1fJ4t_SYmI37DHCao=');
@@ -52,7 +88,9 @@
       cursor: pointer;
     }
 
-    .btn-custom:hover { background-color: #218838; }
+    .btn-custom:hover {
+      background-color: #218838;
+    }
 
     #attendanceTable {
       width: 100%;
@@ -77,120 +115,202 @@
     .status-failed { color: #ff9a9a; font-weight:600; }
 
     @media (max-width: 900px) {
-      .container { flex-direction: column; align-items: center; padding:20px; }
+      .container { flex-direction: column; align-items: center; padding: 20px; }
     }
   </style>
 </head>
+
 <body>
+
+  <!-- NAVBAR -->
+  <div class="navbar">
+    <a href="index.html" id="nav-home">Home</a>
+    <a href="features.html" id="nav-features">Features</a>
+    <a href="contact.html" id="nav-contact">Contact Us</a>
+  </div>
+
   <div class="container">
+
+    <!-- LEFT PANEL: CAMERA -->
     <div class="panel" style="flex:0 0 360px;">
       <h3 style="margin-top:0;">Face Recognition</h3>
       <p style="margin-bottom:6px;">Allow webcam and click Mark Attendance to verify.</p>
+
       <video id="webcam" autoplay muted playsinline></video>
+
       <div style="margin-top:10px;">
         <button id="captureBtn" class="btn-custom">Mark Attendance</button>
       </div>
 
       <div style="margin-top:12px;">
         <h5 style="margin-bottom:6px;">Captured</h5>
-        <img id="resultImage" src="" alt="Captured" style="width:100%;border-radius:8px; display:none;">
+        <img id="resultImage" src="" style="width:100%;border-radius:8px;display:none;">
         <div id="resultMessage" style="margin-top:8px;"></div>
       </div>
     </div>
 
+    <!-- RIGHT PANEL: TABLE -->
     <div class="panel" id="attendancePanel" style="flex:1 1 420px;">
       <h3 style="margin-top:0;">Attendance History</h3>
-      <table id="attendanceTable" aria-live="polite">
-        <thead>
-          <tr><th>Name</th><th>Status</th><th>Time</th></tr>
-        </thead>
-        <tbody id="attendanceBody">
-          <!-- history rows injected here -->
-        </tbody>
-      </table>
 
-      <div style="margin-top:10px; font-size:13px; opacity:0.9;">
-        Registered references: <span id="registeredNames">None</span>
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+        <div style="font-size:14px; opacity:0.95;">
+          Registered references: <span id="registeredNames">None</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button id="exportCsvBtn" class="btn-custom" style="background:#007bff">Export CSV</button>
+          <button id="clearHistoryBtn" class="btn-custom" style="background:#c0392b">Clear History</button>
+        </div>
       </div>
+
+      <table id="attendanceTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Status</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody id="attendanceBody"></tbody>
+      </table>
     </div>
+
   </div>
 
-  <!-- backend -->
+  <footer style="margin-top:18px; text-align:center;">
+    <p style="color:#ddd;">&copy; 2025 Face Attendance System |
+      <a href="privacy.html" style="color:#ddd;">Privacy Policy</a>
+    </p>
+  </footer>
+
+  <!-- BACKEND -->
   <script src="backend.js"></script>
 
+  <!-- PAGE SCRIPT -->
   <script>
-    // ---------- verify page wiring ----------
+
+    /* NAVBAR ACTIVE FIX — highlight only when clicked */
+    document.querySelectorAll('.navbar a').forEach(link => {
+      link.addEventListener('click', function() {
+        document.querySelectorAll('.navbar a').forEach(x => x.classList.remove('nav-active'));
+        this.classList.add('nav-active');
+      });
+    });
+
+    /* CAMERA SETUP */
     const webcam = document.getElementById('webcam');
     const captureBtn = document.getElementById('captureBtn');
     const resultMessage = document.getElementById('resultMessage');
     const resultImage = document.getElementById('resultImage');
     const attendanceBody = document.getElementById('attendanceBody');
     const registeredNames = document.getElementById('registeredNames');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
     async function setupCam() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user' }
+        });
         webcam.srcObject = stream;
       } catch (e) {
-        console.warn('Cam error', e);
-        resultMessage.textContent = 'Webcam unavailable. Use Register on the main page.';
+        resultMessage.textContent = 'Webcam unavailable. Register on main page first.';
       }
     }
     setupCam();
 
-    // render attendance history table from backend (history array)
+    /* RENDER HISTORY */
     function renderHistory() {
-      const history = window.SmartAttendanceBackend.loadAttendanceHistory(); // returns array
+      const history = window.SmartAttendanceBackend.loadAttendanceHistory();
       const refs = window.SmartAttendanceBackend.loadRefs();
-      registeredNames.textContent = refs && refs.length ? refs.map(r=>r.name).join(', ') : 'None';
-      attendanceBody.innerHTML = '';
-      // We keep oldest first (top) and newest appended below, as requested.
+      registeredNames.textContent = refs.length ? refs.map(r => r.name).join(', ') : 'None';
+
+      attendanceBody.innerHTML = "";
+
       history.forEach(entry => {
         const tr = document.createElement('tr');
-        const tdName = document.createElement('td'); tdName.textContent = entry.name;
-        const tdStatus = document.createElement('td'); tdStatus.innerHTML = `<span class="status-present">Present</span>`;
-        const tdTime = document.createElement('td'); tdTime.textContent = new Date(entry.time).toLocaleTimeString();
-        tr.appendChild(tdName); tr.appendChild(tdStatus); tr.appendChild(tdTime);
+
+        tr.innerHTML = `
+          <td>${entry.name}</td>
+          <td><span class="status-present">Present</span></td>
+          <td>${new Date(entry.time).toLocaleTimeString()}</td>
+        `;
+
         attendanceBody.appendChild(tr);
       });
     }
 
-    // capture & verify
+    /* CAPTURE & VERIFY */
     captureBtn.addEventListener('click', async () => {
       if (!webcam || !webcam.videoWidth) {
-        alert('Camera not ready.');
+        alert("Camera not ready.");
         return;
       }
+
       const canvas = document.createElement('canvas');
       canvas.width = webcam.videoWidth;
       canvas.height = webcam.videoHeight;
       canvas.getContext('2d').drawImage(webcam, 0, 0);
-      const dataURL = canvas.toDataURL('image/png');
 
+      const dataURL = canvas.toDataURL('image/png');
       resultImage.src = dataURL;
       resultImage.style.display = 'block';
-      resultMessage.textContent = 'Verifying...';
+      resultMessage.textContent = "Verifying...";
 
       const res = await window.SmartAttendanceBackend.verifyDataURL(dataURL);
+
       if (res.ok) {
-        const time = new Date().toLocaleTimeString();
-        resultMessage.innerHTML = `<span style="color:#8ff0a1;font-weight:600">Verified — ${res.name} at ${time}</span>`;
+        resultMessage.innerHTML =
+          `<span style="color:#8ff0a1;font-weight:600">Verified — ${res.name}</span>`;
+      } else if (res.reason === "no-refs") {
+        resultMessage.innerHTML =
+          `<span style="color:#ffd1a1">No registered references.</span>`;
       } else {
-        if (res.reason === 'no-refs') {
-          resultMessage.innerHTML = `<span style="color:#ffd1a1">No registered references — register on main page first.</span>`;
-        } else {
-          resultMessage.innerHTML = `<span style="color:#ff9a9a">Not verified</span>`;
-        }
+        resultMessage.innerHTML =
+          `<span style="color:#ff9a9a">Not verified</span>`;
       }
+
       renderHistory();
     });
 
-    // initial render after backend ready
-    document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(renderHistory, 200);
-      // also allow backend to request re-render by calling window._refreshHistory
-      window._refreshHistory = renderHistory;
+    /* EXPORT CSV */
+    exportCsvBtn.addEventListener('click', () => {
+      const hist = window.SmartAttendanceBackend.loadAttendanceHistory();
+
+      if (!hist.length) {
+        alert("No data to export.");
+        return;
+      }
+
+      let csv = "Name,Time\n";
+      hist.forEach(row => {
+        csv += `${row.name},${new Date(row.time).toLocaleString()}\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+
+      a.href = url;
+      a.download = "attendance.csv";
+      a.click();
+
+      URL.revokeObjectURL(url);
     });
+
+    /* CLEAR HISTORY */
+    clearHistoryBtn.addEventListener('click', () => {
+      if (confirm("Clear entire attendance history?")) {
+        localStorage.removeItem("face_attendance_history_v1");
+        renderHistory();
+      }
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setTimeout(renderHistory, 200);
+    });
+
   </script>
+
 </body>
 </html>

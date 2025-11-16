@@ -15,40 +15,80 @@ body {
   padding: 20px;
 }
 
+/* header: stronger contrast so logo stands out */
 header {
-  background-color: #003366;
+  background: linear-gradient(90deg, #003366 0%, #002744 100%);
   color: white;
   padding: 20px 0;
   width: 100%;
   text-align: center;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.18);
+  position: relative;
+  z-index: 10;
 }
 
 header h1 {
   font-size: 2.2rem;
+  margin: 0;
 }
 
+header h1 a {
+  color: #fff;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* logo image pill so it keeps high contrast regardless of page background */
+/* increased size for stronger emphasis */
+header h1 a img {
+   background: #ffffff;
+  padding:1px;
+  border-radius: 6px;   /* reduced radius */
+  width: 110px;         /* increased from 92px → 110px */
+  height: auto;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.28);
+  border: 1px solid rgba(0,0,0,0.06);
+  object-fit: cover;
+}
+
+/* Navbar: slightly darker + semi-opaque so it reads over images on most pages */
 .navbar {
   display: flex;
   justify-content: center;
-  background-color: #00509e;
+  background-color: rgba(0,80,158,0.92); /* stronger opacity for legibility */
   width: 100%;
   padding: 10px 0;
+  position: relative;
+  z-index: 11;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
 }
 
+/* navbar link contrast + subtle text-shadow for visibility on images */
 .navbar a {
-  color: white;
+  color: #ffffff;
   text-decoration: none;
   padding: 12px 16px;
   font-size: 1rem;
   margin: 0 12px;
   transition: background-color 0.3s;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
+/* hover applies highlight to individual link only */
 .navbar a:hover {
-  background-color: #003d80;
+  background-color: rgba(0,61,128,0.95);
   border-radius: 5px;
   text-decoration: underline;
   font-weight: bold;
+}
+
+/* active nav style (individual link) */
+.nav-active {
+  background-color: rgba(0,43,85,0.98) !important;
+  border-radius: 5px;
+  padding: 10px 14px;
 }
 
 .main-container {

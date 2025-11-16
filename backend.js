@@ -9,12 +9,14 @@
    Storage:
      - refs: face_attendance_refs_v1  -> [{name, dataURL}, ...]
      - attendanceHistory: face_attendance_history_v1 -> [{name, time}, ...]
+   Note: history capped at HISTORY_LIMIT entries (oldest removed).
 */
 
 (function(){
   const STORAGE_KEY = 'face_attendance_refs_v1';
   const HISTORY_KEY = 'face_attendance_history_v1';
   const DIFF_THRESHOLD = 55;
+  const HISTORY_LIMIT = 200; // keep last 200 entries (change if you want)
 
   // utilities
   function q(sel){ return document.querySelector(sel); }
@@ -28,7 +30,13 @@
   function loadHistory(){
     try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch(e){ return []; }
   }
-  function saveHistory(arr){ localStorage.setItem(HISTORY_KEY, JSON.stringify(arr)); }
+  function saveHistory(arr){
+    // ensure cap
+    if (Array.isArray(arr) && arr.length > HISTORY_LIMIT) {
+      arr = arr.slice(Math.max(0, arr.length - HISTORY_LIMIT));
+    }
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(arr));
+  }
 
   // image helpers
   function dataURLToImage(dataURL){
@@ -200,7 +208,7 @@
         if(d < best.diff) best = {name: r.name, diff: d};
       }
       if(best.diff <= DIFF_THRESHOLD){
-        // push to history
+        // push to history (cap enforced in saveHistory)
         const hist = loadHistory();
         hist.push({ name: best.name, time: Date.now() });
         saveHistory(hist);

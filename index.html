@@ -8,19 +8,17 @@
 </head>
 <body>
   <div class="navbar">
-    <a href="#home">Home</a>
-    <a href="#features">Features</a>
-    <a href="#contact">Contact</a>
+    <a href="index.html" id="nav-home">Home</a>
+    <a href="features.html" id="nav-features">Features</a>
+    <a href="contact.html" id="nav-contact">Contact Us</a>
   </div>
 
   <header>
-    <h1>Face Recognition Attendance System</h1>
+    <h1><a href="index.html" class="logo-link"><img src="https://media.istockphoto.com/id/1384053505/vector/face-recognition-great-design-for-any-purposes-protection-icon-vector-personal-protection.jpg?s=612x612&w=0&k=20&c=wDI6VyC9uS98UZXURoUQOJZCCY3_sPuf2bF8XS29eOs=" alt="Attendance System Logo" style="width:72px; vertical-align:middle; margin-right:12px;"/> Face Recognition Attendance System</a></h1>
   </header>
 
   <div class="main-container">
-    <div class="logo">
-      <img src="https://media.istockphoto.com/id/1384053505/vector/face-recognition-great-design-for-any-purposes-protection-icon-vector-personal-protection.jpg?s=612x612&w=0&k=20&c=wDI6VyC9uS98UZXURoUQOJZCCY3_sPuf2bF8XS29eOs=" alt="Attendance System Logo">
-    </div>
+    <div class="logo" style="display:none"></div>
 
     <h2>Register & then Start Attendance</h2>
     <p>Register reference photos here. After registering, click Start Attendance to verify using webcam.</p>
@@ -64,13 +62,29 @@
   </div>
 
   <footer>
-    <p>&copy; 2025 Face Attendance System | <a href="#privacy">Privacy Policy</a></p>
+    <p>&copy; 2025 Face Attendance System | <a href="privacy.html">Privacy Policy</a></p>
   </footer>
 
   <!-- backend -->
   <script src="backend.js"></script>
 
   <script>
+    // Highlight nav active item (works across pages)
+    (function setActiveNav() {
+      try {
+        const path = location.pathname.split('/').pop();
+        const map = {
+          'index.html': 'nav-home',
+          '': 'nav-home',
+          'features.html': 'nav-features',
+          'contact.html': 'nav-contact',
+          'xedni.html': null
+        };
+        const id = map[path] || map['index.html'];
+        if (id) document.getElementById(id).classList.add('nav-active');
+      } catch(e){}
+    })();
+
     // ---- Index page wiring: file-register, webcam-register, registered list + delete ----
     document.addEventListener('DOMContentLoaded', () => {
       // file upload register

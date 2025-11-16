@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Contact Us - Face Recognition Attendance System</title>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <div class="navbar">
+    <a href="index.html" id="nav-home">Home</a>
+    <a href="features.html" id="nav-features">Features</a>
+    <a href="contact.html" id="nav-contact">Contact Us</a>
+  </div>
+
+  <header>
+    <h1><a href="index.html" class="logo-link"><img src="https://media.istockphoto.com/id/1384053505/vector/face-recognition-great-design-for-any-purposes-protection-icon-vector-personal-protection.jpg?s=612x612&w=0&k=20&c=wDI6VyC9uS98UZXURoUQOJZCCY3_sPuf2bF8XS29eOs=" alt="Attendance System Logo" style="width:72px; vertical-align:middle; margin-right:12px;"/> Face Recognition Attendance System</a></h1>
+  </header>
+
+  <div class="main-container">
+    <div class="logo" style="display:none"></div>
+
+    <h2>Contact Us</h2>
+    <p style="color:#333; max-width:760px;">
+      Want help integrating this into a project, or need modifications (CSV format changes, history caps, server integration)? Drop a message below — I’ll reply with clear steps and example code.
+    </p>
+
+    <form id="contactForm" style="margin-top:12px; width:100%; max-width:600px; text-align:left;">
+      <label style="display:block; margin-bottom:6px; color:#333;">Your Name</label>
+      <input type="text" id="cname" style="width:100%; padding:10px; border-radius:6px; border:1px solid #ccc;">
+      <label style="display:block; margin:12px 0 6px 0; color:#333;">Your Message / Request</label>
+      <textarea id="cmsg" rows="5" style="width:100%; padding:10px; border-radius:6px; border:1px solid #ccc;"></textarea>
+      <div style="margin-top:10px;">
+        <button type="button" id="sendBtn" class="btn-start-like">Send (Demo)</button>
+      </div>
+    </form>
+
+    <div id="contactResult" style="margin-top:10px; color:#333; display:none;"></div>
+
+    <div style="margin-top:16px; color:#333; text-align:left; max-width:760px;">
+      <h4>Need a quick start?</h4>
+      <ul>
+        <li>Register a few faces on the Register page.</li>
+        <li>Open the Mark Attendance page and use the webcam to test verification.</li>
+        <li>Export CSV to send results to your teacher.</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 Face Attendance System | <a href="privacy.html">Privacy Policy</a></p>
+  </footer>
+
+  <script>
+    document.getElementById('sendBtn').addEventListener('click', () => {
+      const n = document.getElementById('cname').value.trim();
+      const m = document.getElementById('cmsg').value.trim();
+      if (!n || !m) { alert('Please enter name and message.'); return; }
+      const r = document.getElementById('contactResult');
+      r.style.display = 'block';
+      r.textContent = 'Message noted (demo). Thank you, ' + n + '.';
+      document.getElementById('cname').value = '';
+      document.getElementById('cmsg').value = '';
+    });
+    try{document.getElementById('nav-contact').classList.add('nav-active')}catch(e){}
+  </script>
+</body>
+</html>
